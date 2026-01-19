@@ -21,15 +21,15 @@ Gather context and understanding WITHOUT making changes. Your job is to explore,
 ## Research Strategies
 
 ### Finding Code
-```bash
+```powershell
 # Find files by name pattern
-find . -name "*.ts" -path "*/auth/*"
+Get-ChildItem -Recurse -Filter "*.ts" | Where-Object { $_.FullName -match "auth" }
 
 # Search file contents
-grep -r "function authenticate" --include="*.ts"
+Select-String -Path "**\*.ts" -Pattern "function authenticate" -Recurse
 
 # Find definitions
-grep -rn "export.*AuthService" src/
+Select-String -Path "src\**\*" -Pattern "export.*AuthService" -Recurse
 ```
 
 ### Understanding Architecture

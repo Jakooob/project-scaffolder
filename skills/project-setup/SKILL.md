@@ -22,7 +22,7 @@ Do NOT use for:
 ## Prerequisites
 
 - Write access to target directory
-- For existing projects: ability to read config files (package.json, pyproject.toml, etc.)
+- For existing projects: ability to read config files (package.json, *.csproj, *.sln, etc.)
 
 ## Instructions
 
@@ -30,18 +30,18 @@ Do NOT use for:
 
 Analyze the target directory:
 
-```bash
-# Check for Node.js/TypeScript
-ls package.json 2>/dev/null && echo "Node.js project"
+```powershell
+# Check for .NET/C#
+if (Test-Path *.sln, *.csproj) { Write-Host ".NET project" }
 
-# Check for Python
-ls pyproject.toml requirements.txt setup.py 2>/dev/null && echo "Python project"
+# Check for Node.js/TypeScript
+if (Test-Path package.json) { Write-Host "Node.js project" }
 
 # Check for Go
-ls go.mod 2>/dev/null && echo "Go project"
+if (Test-Path go.mod) { Write-Host "Go project" }
 
 # Check for Rust
-ls Cargo.toml 2>/dev/null && echo "Rust project"
+if (Test-Path Cargo.toml) { Write-Host "Rust project" }
 ```
 
 If no config files exist, ask the user what type of project they want to create.
@@ -63,7 +63,7 @@ For **existing projects**, extract from:
 
 Use the appropriate template:
 - React/TypeScript → `/templates/claude-md/react-typescript.md`
-- Python API → `/templates/claude-md/python-api.md`
+- .NET API → `/templates/claude-md/dotnet-api.md`
 - Full Stack → `/templates/claude-md/fullstack.md`
 - Other → `/templates/claude-md/minimal.md`
 
@@ -117,14 +117,14 @@ my-app/
 └── ...
 ```
 
-### Example 2: Existing Python Project
+### Example 2: Existing .NET Project
 
-**User says:** "Add Claude Code support to my Django project"
+**User says:** "Add Claude Code support to my ASP.NET Core project"
 
 **Actions:**
-1. Read existing pyproject.toml and requirements.txt
+1. Read existing *.csproj and *.sln files
 2. Analyze project structure
-3. Generate CLAUDE.md tailored to Django
+3. Generate CLAUDE.md tailored to ASP.NET Core
 4. Add relevant slash commands
 
 ## Verification

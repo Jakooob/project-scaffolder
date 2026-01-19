@@ -74,19 +74,21 @@ How to prevent similar issues in the future
 
 ## Common Debugging Commands
 
-```bash
+```powershell
 # View recent changes
 git diff HEAD~5
 
 # Search for error patterns
-grep -r "ErrorPattern" src/
+Select-String -Path "src\*" -Pattern "ErrorPattern" -Recurse
 
-# Check test output
+# Check test output (JavaScript/TypeScript)
 npm test -- --verbose
-pytest -v
+
+# Check test output (.NET/C#)
+dotnet test --verbosity normal
 
 # View logs
-tail -f logs/app.log
+Get-Content logs/app.log -Wait -Tail 50
 ```
 
 ## Tips

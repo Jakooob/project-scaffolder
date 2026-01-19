@@ -27,7 +27,7 @@ Before using this skill, ensure:
 
 {{STEP_1_DETAILED_INSTRUCTIONS}}
 
-```bash
+```powershell
 # Example command if applicable
 {{EXAMPLE_COMMAND}}
 ```

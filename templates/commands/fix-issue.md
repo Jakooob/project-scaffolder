@@ -10,7 +10,7 @@ $ARGUMENTS should contain: `<issue-number>`
 
 ### Step 1: Fetch Issue Details
 
-```bash
+```powershell
 gh issue view $ISSUE_NUMBER
 ```
 
@@ -30,11 +30,11 @@ Read and understand:
 ### Step 3: Search the Codebase
 
 Find relevant code:
-```bash
+```powershell
 # Search for related files
-grep -r "relevant_keyword" src/
+Select-String -Path "src\*" -Pattern "relevant_keyword" -Recurse
 # Find related tests
-find . -name "*test*" -path "*relevant*"
+Get-ChildItem -Recurse -Filter "*test*" | Where-Object { $_.FullName -match "relevant" }
 ```
 
 ### Step 4: Create a Plan
@@ -62,15 +62,16 @@ Share the plan and wait for confirmation before proceeding.
 ### Step 7: Verify Everything
 
 Run the full verification suite:
-```bash
-# Lint
-npm run lint  # or ruff check .
+```powershell
+# For JavaScript/TypeScript
+npm run lint
+npm run typecheck
+npm test
 
-# Type check
-npm run typecheck  # or mypy
-
-# Tests
-npm test  # or pytest
+# For .NET/C#
+dotnet build
+dotnet test
+dotnet format --verify-no-changes
 ```
 
 ### Step 8: Create Commit
@@ -86,9 +87,9 @@ Fixes #<issue-number>
 
 ### Step 9: Create Pull Request
 
-```bash
-git push -u origin fix/issue-$ISSUE_NUMBER
-gh pr create --title "Fix #$ISSUE_NUMBER: <title>" --body "Fixes #$ISSUE_NUMBER
+```powershell
+git push -u origin "fix/issue-$ISSUE_NUMBER"
+gh pr create --title "Fix #$ISSUE_NUMBER`: <title>" --body "Fixes #$ISSUE_NUMBER
 
 ## Changes
 - <list of changes>

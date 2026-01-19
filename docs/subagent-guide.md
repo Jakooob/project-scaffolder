@@ -191,7 +191,7 @@ Subagents can be resumed to continue previous work:
 
 For session-specific subagents:
 
-```bash
+```powershell
 claude --agents '{
   "quick-check": {
     "description": "Quick code check",

@@ -48,14 +48,14 @@ A good CLAUDE.md should be:
 
 ## Commands
 
-```bash
+```powershell
 # Scaffolding commands
 /project:scaffold         # Interactive project setup wizard
 /project:scaffold-react   # Quick React/TypeScript project
-/project:scaffold-python  # Quick Python project
-/project:scaffold-api     # Quick API project (FastAPI/Express)
+/project:scaffold-dotnet  # Quick .NET/C# project
+/project:scaffold-api     # Quick API project (ASP.NET Core)
 
-# CLAUDE.md commands  
+# CLAUDE.md commands
 /project:generate-claude-md    # Generate CLAUDE.md from project analysis
 /project:optimize-claude-md    # Optimize existing CLAUDE.md
 
@@ -80,7 +80,7 @@ project-scaffolder/
 │   ├── commands/               # This project's slash commands
 │   │   ├── scaffold.md
 │   │   ├── scaffold-react.md
-│   │   ├── scaffold-python.md
+│   │   ├── scaffold-dotnet.md
 │   │   ├── generate-claude-md.md
 │   │   ├── create-skill.md
 │   │   └── create-subagent.md
@@ -91,7 +91,7 @@ project-scaffolder/
 ├── templates/                   # Project templates
 │   ├── claude-md/              # CLAUDE.md templates by project type
 │   │   ├── react-typescript.md
-│   │   ├── python-api.md
+│   │   ├── dotnet-api.md
 │   │   ├── fullstack.md
 │   │   └── minimal.md
 │   ├── commands/               # Slash command templates
@@ -171,8 +171,8 @@ System prompt with specific instructions...
 | Project Type | Template | Key Features |
 |-------------|----------|--------------|
 | React/TypeScript | `react-typescript.md` | Component patterns, testing, build commands |
-| Python API | `python-api.md` | FastAPI/Django, venv setup, pytest |
-| Full Stack | `fullstack.md` | Frontend + backend coordination |
+| .NET API | `dotnet-api.md` | ASP.NET Core, EF Core, xUnit |
+| Full Stack | `fullstack.md` | Frontend + .NET backend coordination |
 | Minimal | `minimal.md` | Bare essentials only |
 
 ## IMPORTANT: Generation Guidelines

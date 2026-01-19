@@ -26,7 +26,7 @@ src/
 
 ## Commands
 
-```bash
+```powershell
 # Development
 npm run dev         # Start development server
 npm run build       # Build for production
@@ -94,3 +94,11 @@ Before committing, ensure:
 2. Define TypeScript types for request/response
 3. Create React Query hook in `/src/hooks/`
 4. Handle loading and error states in consuming components
+
+## Git Policy
+
+**NEVER run these commands:**
+- `git commit` - User handles all commits manually
+- `git push` - User handles all pushes manually
+
+Claude Code should stage files with `git add` if needed, but leave committing and pushing to the user.

@@ -10,7 +10,7 @@ $ARGUMENTS should contain the commit message or "auto" for auto-generated messag
 
 ### Step 1: Check for Changes
 
-```bash
+```powershell
 git status
 git diff --stat
 ```
@@ -22,21 +22,21 @@ If no changes, inform user and exit.
 Run all available quality tools (detect from project type):
 
 **JavaScript/TypeScript:**
-```bash
+```powershell
 npm run typecheck  # or tsc --noEmit
 npm run lint       # or eslint
 npm run test       # or jest/vitest
 ```
 
-**Python:**
-```bash
-ruff check .
-mypy app/
-pytest
+**.NET/C#:**
+```powershell
+dotnet build --no-restore
+dotnet test --no-build
+dotnet format --verify-no-changes
 ```
 
 **General:**
-```bash
+```powershell
 # Check for any linting config and run appropriate tool
 ```
 
@@ -63,7 +63,7 @@ If $ARGUMENTS is "auto":
 
 Otherwise use the provided commit message.
 
-```bash
+```powershell
 git add -A
 git commit -m "<message>"
 ```

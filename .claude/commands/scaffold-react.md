@@ -10,16 +10,16 @@ $ARGUMENTS should contain: `<project-name> [target-directory]`
 
 ### 1. Create Project Structure
 
-```bash
-mkdir -p $PROJECT_NAME
-cd $PROJECT_NAME
+```powershell
+New-Item -ItemType Directory -Name $PROJECT_NAME -Force
+Set-Location $PROJECT_NAME
 ```
 
 ### 2. Initialize Package.json (if not using a framework CLI)
 
 If starting from scratch, create a basic Vite + React + TypeScript setup:
 
-```bash
+```powershell
 npm create vite@latest . -- --template react-ts
 npm install
 ```
@@ -34,7 +34,7 @@ Use the `react-typescript.md` template from `/templates/claude-md/`. Fill in:
 ### 4. Set Up Quality Tools
 
 Ensure these are configured:
-```bash
+```powershell
 # Install dev dependencies if not present
 npm install -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser
 npm install -D prettier eslint-config-prettier

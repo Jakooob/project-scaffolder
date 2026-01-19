@@ -31,7 +31,7 @@ Ask the user:
 skills/<skill-name>/
 ├── SKILL.md           # Main skill file
 ├── scripts/           # Optional helper scripts
-│   └── helper.py
+│   └── Helper.cs
 └── resources/         # Optional templates/examples
     └── template.md
 ```

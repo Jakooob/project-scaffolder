@@ -11,12 +11,11 @@ $ARGUMENTS can optionally specify a target directory. Default: current directory
 ### Step 1: Detect Project Type
 
 Look for these indicators:
+- `*.sln` / `*.csproj` → .NET/C#
 - `package.json` → Node.js/JavaScript/TypeScript
-- `pyproject.toml` / `requirements.txt` / `setup.py` → Python
 - `Cargo.toml` → Rust
 - `go.mod` → Go
 - `pom.xml` / `build.gradle` → Java
-- `Gemfile` → Ruby
 
 ### Step 2: Analyze Configuration Files
 
@@ -61,7 +60,7 @@ Create a CLAUDE.md following the WHAT/WHY/HOW framework:
 
 ## Commands
 
-```bash
+```powershell
 # List detected commands from package.json/Makefile/etc.
 ```
 
@@ -75,7 +74,7 @@ Create a CLAUDE.md following the WHAT/WHY/HOW framework:
 
 - Safe to edit: source directories
 - Read-only: config, generated files
-- Never touch: node_modules, venv, build outputs
+- Never touch: node_modules, bin, obj, build outputs
 ```
 
 ### Step 6: Apply Best Practices

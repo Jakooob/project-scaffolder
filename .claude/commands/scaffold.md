@@ -6,14 +6,14 @@ You are setting up a new Claude Code project. Follow this interactive process:
 
 Ask the user for:
 1. **Project name** (will be used for folder name)
-2. **Project type** (React, Python API, Full Stack, or Other)
+2. **Project type** (React, .NET API, Full Stack, or Other)
 3. **Brief description** of what the project does
 4. **Target directory** (default: current directory)
 
 ## Step 2: Analyze Existing Code (if applicable)
 
 If scaffolding in an existing project:
-1. Read package.json, pyproject.toml, or similar config files
+1. Read package.json, *.csproj, *.sln, or similar config files
 2. Examine the folder structure
 3. Look for existing README.md
 4. Check for existing linter/formatter configs
@@ -22,7 +22,7 @@ If scaffolding in an existing project:
 
 Based on the project type, use the appropriate template from `/templates/claude-md/`:
 - React/TypeScript: `react-typescript.md`
-- Python API: `python-api.md`  
+- .NET API: `dotnet-api.md`
 - Full Stack: `fullstack.md`
 - Other: `minimal.md`
 

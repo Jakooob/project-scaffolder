@@ -4,7 +4,7 @@
 
 ## Commands
 
-```bash
+```powershell
 # Development
 {{DEV_COMMAND}}
 
@@ -29,3 +29,9 @@
 Run these before committing:
 1. {{LINT_COMMAND}}
 2. {{TEST_COMMAND}}
+
+## Git Policy
+
+**NEVER run these commands:**
+- `git commit` - User handles all commits manually
+- `git push` - User handles all pushes manually

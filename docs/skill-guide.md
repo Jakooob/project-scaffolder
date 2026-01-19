@@ -21,7 +21,7 @@ skills/
 └── my-skill/
     ├── SKILL.md           # Required: Main instructions
     ├── scripts/           # Optional: Helper scripts
-    │   └── helper.py
+    │   └── helper.cs
     └── resources/         # Optional: Templates, examples
         └── template.md
 ```
@@ -82,7 +82,7 @@ Use when user asks to fill PDF forms, extract form data, or create fillable PDFs
 ### Level 3: Reference Material (On Demand)
 ```markdown
 See `resources/form-types.md` for supported PDF form types.
-See `scripts/pdf-utils.py` for helper functions.
+See `scripts/PdfUtils.cs` for helper functions.
 ```
 
 Only loaded when needed for the specific task.
@@ -135,20 +135,22 @@ When your SKILL.md gets unwieldy:
 Code in skills can be:
 
 **Executable Tools**
-```python
-# scripts/validate_pdf.py
-# Claude runs this to validate PDF structure
-import pypdf
+```csharp
+// scripts/ValidatePdf.cs
+// Claude runs this to validate PDF structure
+using iTextSharp;
 ...
 ```
 
 **Documentation**
-```python
-# scripts/example_usage.py
-# Claude reads this as a reference
-def example():
-    """Shows how to use the PDF library"""
+```csharp
+// scripts/ExampleUsage.cs
+// Claude reads this as a reference
+public void Example()
+{
+    // Shows how to use the PDF library
     ...
+}
 ```
 
 Be clear about intent. Document whether scripts are meant to be run or read.
@@ -162,7 +164,7 @@ Every skill should explain how to verify success:
 
 After filling the form:
 1. Open the PDF and visually confirm fields are filled
-2. Run `scripts/validate_filled.py output.pdf`
+2. Run `dotnet run --project scripts/ValidateFilled -- output.pdf`
 3. Check that all required fields have values
 ```
 
@@ -181,7 +183,7 @@ description: Create and run database migrations safely
 ## Instructions
 
 ### Creating a Migration
-1. Generate migration file: `alembic revision --autogenerate -m "description"`
+1. Generate migration file: `dotnet ef migrations add MigrationName`
 2. Review the generated migration
 3. Test on development database first
 ...

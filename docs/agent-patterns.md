@@ -230,7 +230,7 @@ Subagents preserve the main conversation context by operating in isolation. Use 
 ### Parallel Workspaces
 
 Use multiple Claude sessions with git worktrees:
-```bash
+```powershell
 git worktree add ../feature-a feature-a
 git worktree add ../feature-b feature-b
 ```

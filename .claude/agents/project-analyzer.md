@@ -19,21 +19,25 @@ You are a project analysis specialist focused on understanding codebases to gene
 
 ### Step 1: Detect Project Type
 
-```bash
+```powershell
 # Check for config files
-ls -la package.json pyproject.toml Cargo.toml go.mod pom.xml Gemfile 2>/dev/null
+Get-ChildItem -Filter "*.sln", "*.csproj", "package.json", "Cargo.toml", "go.mod", "pom.xml" -ErrorAction SilentlyContinue
 ```
 
 | File | Project Type |
 |------|--------------|
+| `*.sln` / `*.csproj` | .NET/C# |
 | `package.json` | Node.js/JavaScript/TypeScript |
-| `pyproject.toml` / `requirements.txt` | Python |
 | `Cargo.toml` | Rust |
 | `go.mod` | Go |
 | `pom.xml` / `build.gradle` | Java |
-| `Gemfile` | Ruby |
 
 ### Step 2: Extract Project Info
+
+**From *.csproj / *.sln:**
+- Project name, target framework
+- Package references (dependencies)
+- Project references (solution structure)
 
 **From package.json:**
 - name, description
@@ -41,31 +45,26 @@ ls -la package.json pyproject.toml Cargo.toml go.mod pom.xml Gemfile 2>/dev/null
 - dependencies (key frameworks)
 - devDependencies (tooling)
 
-**From pyproject.toml:**
-- project name, description
-- dependencies
-- tool configurations
-
 ### Step 3: Map Structure
 
-```bash
+```powershell
 # List top-level structure
-ls -la
+Get-ChildItem
 
 # Find source directories
-find . -type d -name "src" -o -name "app" -o -name "lib" | head -10
+Get-ChildItem -Recurse -Directory | Where-Object { $_.Name -match "^(src|app|lib)$" } | Select-Object -First 10
 
 # Find test directories
-find . -type d -name "test*" -o -name "__tests__" | head -10
+Get-ChildItem -Recurse -Directory | Where-Object { $_.Name -match "^test" -or $_.Name -eq "__tests__" } | Select-Object -First 10
 ```
 
 ### Step 4: Identify Tooling
 
 Look for:
-- `.eslintrc*` → ESLint
-- `.prettierrc*` → Prettier
-- `ruff.toml` / `pyproject.toml [tool.ruff]` → Ruff
-- `mypy.ini` / `pyproject.toml [tool.mypy]` → MyPy
+- `.editorconfig` → Editor config
+- `Directory.Build.props` → .NET build properties
+- `.eslintrc*` → ESLint (for frontend)
+- `.prettierrc*` → Prettier (for frontend)
 - `tsconfig.json` → TypeScript
 - `.github/workflows/` → CI/CD
 
