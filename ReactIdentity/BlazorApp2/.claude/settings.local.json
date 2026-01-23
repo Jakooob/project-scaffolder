@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(dotnet ef migrations add:*)",
+      "Bash(dir /s /b *.cs)",
+      "Bash(tree:*)",
+      "Bash(dir \"C:\\\\Users\\\\Jakob\\\\source\\\\repos\\\\BlazorApp2\\\\BlazorApp2\\\\wwwroot\" /b)",
+      "Bash(cmd /c \"rmdir /s /q C:\\\\Users\\\\Jakob\\\\source\\\\repos\\\\BlazorApp2\\\\BlazorApp2\\\\Components\")",
+      "Bash(npm install)",
+      "Bash(npm run build)",
+      "Bash(git -C \"C:\\\\Users\\\\Jakob\\\\source\\\\repos\\\\BlazorApp2\" show HEAD:BlazorApp2/Components/Pages/Auth.razor)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\Jakob\\\\source\\\\repos\\\\BlazorApp2\\\\*Auth*\")",
+      "Bash(dir /s /b \"C:\\\\Users\\\\Jakob\\\\source\\\\repos\\\\BlazorApp2\\\\*.bak\" \"C:\\\\Users\\\\Jakob\\\\source\\\\repos\\\\BlazorApp2\\\\*.backup\" \"C:\\\\Users\\\\Jakob\\\\source\\\\repos\\\\BlazorApp2\\\\*.orig\")",
+      "Bash(powershell -Command:*)",
+      "WebSearch"
+    ]
+  }
+}
