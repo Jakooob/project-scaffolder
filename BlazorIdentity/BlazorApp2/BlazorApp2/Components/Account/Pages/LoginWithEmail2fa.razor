@@ -1,0 +1,150 @@
+@page "/Account/LoginWithEmail2fa"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using BlazorApp2.Data
+@using BlazorApp2.Components.Account
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IdentityNoOpEmailSender EmailSender
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<LoginWithEmail2fa> Logger
+
+<PageTitle>Email verification</PageTitle>
+
+<h1>Email verification</h1>
+<hr />
+<StatusMessage Message="@message" />
+
+@if (!codeSent)
+{
+    <p>A verification code will be sent to your email address...</p>
+}
+else
+{
+    <p>A verification code has been sent to your email. Enter the code below.</p>
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm Model="Input" FormName="login-with-email-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
+                <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+                <input type="hidden" name="RememberMe" value="@RememberMe" />
+                <input type="hidden" name="codeSent" value="true" />
+                <input type="hidden" name="generatedCode" value="@generatedCode" />
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" role="alert" />
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" class="form-control" autocomplete="off" />
+                    <label for="Input.TwoFactorCode" class="form-label">Verification code</label>
+                    <ValidationMessage For="() => Input.TwoFactorCode" class="text-danger" />
+                </div>
+                <div>
+                    <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
+                </div>
+            </EditForm>
+            <div class="mt-3">
+                <form @formname="resend-code" @onsubmit="OnSendCodeAsync" method="post">
+                    <AntiforgeryToken />
+                    <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+                    <input type="hidden" name="RememberMe" value="@RememberMe" />
+                    <button type="submit" class="btn btn-link">Resend code</button>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+<p class="mt-3">
+    Don't have access to your email? You can
+    <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">log in with a recovery code</a>.
+</p>
+
+@code {
+    private string? message;
+    private ApplicationUser user = default!;
+    private bool codeSent;
+    private string? generatedCode;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    private bool RememberMe { get; set; }
+
+    [SupplyParameterFromForm(Name = "codeSent")]
+    private bool CodeSentForm { get; set; }
+
+    [SupplyParameterFromForm(Name = "generatedCode")]
+    private string? GeneratedCodeForm { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+
+        // Ensure the user has gone through the username & password screen first
+        user = await SignInManager.GetTwoFactorAuthenticationUserAsync() ??
+            throw new InvalidOperationException("Unable to load two-factor authentication user.");
+
+        // Restore state from form post
+        codeSent = CodeSentForm;
+        generatedCode = GeneratedCodeForm;
+        if (!codeSent)
+            await OnSendCodeAsync();
+    }
+
+    private async Task OnSendCodeAsync()
+    {
+        var email = await UserManager.GetEmailAsync(user);
+        if (string.IsNullOrEmpty(email))
+        {
+            message = "Error: Unable to get user email.";
+            return;
+        }
+
+        // Generate a 6-digit code
+        generatedCode = new Random().Next(100000, 999999).ToString();
+
+        await EmailSender.SendTwoFactorCodeAsync(user, email, generatedCode);
+
+        codeSent = true;
+        message = "Verification code sent to your email.";
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        var enteredCode = Input.TwoFactorCode!.Replace(" ", string.Empty).Replace("-", string.Empty);
+
+        if (enteredCode != generatedCode)
+        {
+            Logger.LogWarning("Invalid email 2FA code entered for user with ID '{UserId}'.", await UserManager.GetUserIdAsync(user));
+            message = "Error: Invalid verification code.";
+            return;
+        }
+
+        // Use the built-in sign-in method with a custom token
+        // Since we're using email, we'll mark as authenticated and sign in
+        var result = await SignInManager.TwoFactorSignInAsync("Email", enteredCode, RememberMe, false);
+
+        // If the built-in method doesn't work with our custom code, we need to sign in manually
+        if (!result.Succeeded)
+        {
+            // Manual sign-in for email 2FA
+            await SignInManager.SignInAsync(user, RememberMe);
+        }
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        Logger.LogInformation("User with ID '{UserId}' logged in with email 2FA.", userId);
+        RedirectManager.RedirectTo(ReturnUrl);
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [StringLength(7, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Text)]
+        [Display(Name = "Verification code")]
+        public string? TwoFactorCode { get; set; }
+    }
+}

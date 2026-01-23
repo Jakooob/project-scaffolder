@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(scaffold)",
+      "Bash(New-Item -ItemType Directory -Path \"E:\\\\Source\\\\Boksynen\" -Force)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln add:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(git init:*)",
+      "Bash(dotnet ef migrations add:*)"
+    ]
+  }
+}

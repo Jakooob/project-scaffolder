@@ -1,0 +1,198 @@
+@page "/Account/Manage/EnableEmail2fa"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using BlazorApp2.Data
+@using BlazorApp2.Components.Account
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IdentityNoOpEmailSender EmailSender
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<EnableEmail2fa> Logger
+
+<PageTitle>Enable email two-factor authentication</PageTitle>
+
+@if (recoveryCodes is not null)
+{
+    <ShowRecoveryCodes RecoveryCodes="recoveryCodes.ToArray()" StatusMessage="@message" />
+}
+else
+{
+    <StatusMessage Message="@message" />
+    <h3>Enable email two-factor authentication</h3>
+
+    @if (!isEmailConfirmed)
+    {
+        <div class="alert alert-warning">
+            <p>You must confirm your email address before enabling email 2FA.</p>
+            <a href="Account/Manage/Email">Go to email settings</a>
+        </div>
+    }
+    else if (isEmail2faEnabled)
+    {
+        <div class="alert alert-success">
+            <p>Email two-factor authentication is currently <strong>enabled</strong>.</p>
+        </div>
+        <form @formname="disable-email-2fa" @onsubmit="OnDisableAsync" method="post">
+            <AntiforgeryToken />
+            <button type="submit" class="btn btn-warning">Disable email 2FA</button>
+        </form>
+    }
+    else if (!codeSent)
+    {
+        <p>We will send a verification code to your email address: <strong>@userEmail</strong></p>
+        <form @formname="send-code" @onsubmit="OnSendCodeAsync" method="post">
+            <AntiforgeryToken />
+            <button type="submit" class="btn btn-primary">Send verification code</button>
+        </form>
+    }
+    else
+    {
+        <p>A verification code has been sent to <strong>@userEmail</strong>. Enter the code below to enable email 2FA.</p>
+        <div class="row">
+            <div class="col-xl-6">
+                <EditForm Model="Input" FormName="verify-code" OnValidSubmit="OnValidSubmitAsync" method="post">
+                    <DataAnnotationsValidator />
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="Input.Code" id="Input.Code" class="form-control" autocomplete="off" placeholder="Enter the code" />
+                        <label for="Input.Code" class="control-label form-label">Verification Code</label>
+                        <ValidationMessage For="() => Input.Code" class="text-danger" />
+                    </div>
+                    <button type="submit" class="w-100 btn btn-lg btn-primary">Verify and enable</button>
+                    <ValidationSummary class="text-danger" role="alert" />
+                </EditForm>
+            </div>
+        </div>
+        <div class="mt-3">
+            <form @formname="resend-code" @onsubmit="OnSendCodeAsync" method="post">
+                <AntiforgeryToken />
+                <button type="submit" class="btn btn-link">Resend code</button>
+            </form>
+        </div>
+    }
+}
+
+@code {
+    private string? message;
+    private ApplicationUser? user;
+    private string? userEmail;
+    private bool isEmailConfirmed;
+    private bool isEmail2faEnabled;
+    private bool codeSent;
+    private string? generatedCode;
+    private IEnumerable<string>? recoveryCodes;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = default!;
+
+    [SupplyParameterFromForm(Name = "codeSent")]
+    private bool CodeSentForm { get; set; }
+
+    [SupplyParameterFromForm(Name = "generatedCode")]
+    private string? GeneratedCodeForm { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+
+        user = await UserManager.GetUserAsync(HttpContext.User);
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        userEmail = await UserManager.GetEmailAsync(user);
+        isEmailConfirmed = await UserManager.IsEmailConfirmedAsync(user);
+        isEmail2faEnabled = user.PreferredTwoFactorMethod == TwoFactorMethod.Email && await UserManager.GetTwoFactorEnabledAsync(user);
+
+        // Restore state from form post
+        codeSent = CodeSentForm;
+        generatedCode = GeneratedCodeForm;
+    }
+
+    private async Task OnSendCodeAsync()
+    {
+        if (user is null || string.IsNullOrEmpty(userEmail))
+        {
+            return;
+        }
+
+        // Generate a 6-digit code
+        generatedCode = new Random().Next(100000, 999999).ToString();
+
+        await EmailSender.SendTwoFactorCodeAsync(user, userEmail, generatedCode);
+
+        codeSent = true;
+        message = "Verification code sent to your email.";
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        var enteredCode = Input.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
+
+        if (enteredCode != generatedCode)
+        {
+            message = "Error: Invalid verification code.";
+            return;
+        }
+
+        // Enable 2FA and set preferred method to Email
+        await UserManager.SetTwoFactorEnabledAsync(user, true);
+        user.PreferredTwoFactorMethod = TwoFactorMethod.Email;
+        await UserManager.UpdateAsync(user);
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        Logger.LogInformation("User with ID '{UserId}' has enabled email 2FA.", userId);
+
+        message = "Email two-factor authentication has been enabled.";
+
+        if (await UserManager.CountRecoveryCodesAsync(user) == 0)
+        {
+            recoveryCodes = await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+        }
+        else
+        {
+            RedirectManager.RedirectToWithStatus("Account/Manage/TwoFactorAuthentication", message, HttpContext);
+        }
+    }
+
+    private async Task OnDisableAsync()
+    {
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        user.PreferredTwoFactorMethod = TwoFactorMethod.None;
+        await UserManager.UpdateAsync(user);
+        await UserManager.SetTwoFactorEnabledAsync(user, false);
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        Logger.LogInformation("User with ID '{UserId}' has disabled email 2FA.", userId);
+
+        RedirectManager.RedirectToWithStatus(
+            "Account/Manage/TwoFactorAuthentication",
+            "Email two-factor authentication has been disabled.",
+            HttpContext);
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [StringLength(7, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Text)]
+        [Display(Name = "Verification Code")]
+        public string Code { get; set; } = "";
+    }
+}

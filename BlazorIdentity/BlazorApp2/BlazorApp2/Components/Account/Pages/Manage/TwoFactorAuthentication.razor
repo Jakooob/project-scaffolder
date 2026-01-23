@@ -1,0 +1,45 @@
+﻿@page "/Account/Manage/TwoFactorAuthentication"
+
+@using Microsoft.AspNetCore.Http.Features
+@using Microsoft.AspNetCore.Identity
+@using BlazorApp2.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Two-factor authentication (2FA)</PageTitle>
+
+<StatusMessage />
+<h3>Two-factor authentication (2FA)</h3>
+<h4 class="mt-4">Email verification</h4>
+@if (isEmail2faEnabled)
+{
+    <p class="text-success">Email two-factor authentication is <strong>enabled</strong>.</p>
+    <a href="Account/Manage/EnableEmail2fa" class="btn btn-primary">Manage email 2FA</a>
+}
+else
+{
+    <p>Use your email address to receive verification codes when logging in.</p>
+    <a href="Account/Manage/EnableEmail2fa" class="btn btn-primary">Enable email 2FA</a>
+}
+
+@code {
+    private bool is2faEnabled;
+    private bool isEmail2faEnabled;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await UserManager.GetUserAsync(HttpContext.User);
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        is2faEnabled = await UserManager.GetTwoFactorEnabledAsync(user);
+        isEmail2faEnabled = user.PreferredTwoFactorMethod == TwoFactorMethod.Email && is2faEnabled;
+    }
+}
