@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Security.Cryptography;
 
 namespace BlazorApp2.Controllers
 {
@@ -17,7 +19,11 @@ namespace BlazorApp2.Controllers
         private readonly IEmailSender<ApplicationUser> _emailSender;
         private readonly IdentityNoOpEmailSender _noOpEmailSender;
         private readonly IAntiforgery _antiforgery;
+        private readonly IDistributedCache _cache;
         private readonly ILogger<AuthController> _logger;
+
+        private const string PasskeyVerificationCodePrefix = "PasskeyVerificationCode:";
+        private static readonly TimeSpan VerificationCodeExpiry = TimeSpan.FromMinutes(10);
 
         public AuthController(
             UserManager<ApplicationUser> userManager,
@@ -25,6 +31,7 @@ namespace BlazorApp2.Controllers
             IEmailSender<ApplicationUser> emailSender,
             IdentityNoOpEmailSender noOpEmailSender,
             IAntiforgery antiforgery,
+            IDistributedCache cache,
             ILogger<AuthController> logger)
         {
             _userManager = userManager;
@@ -32,7 +39,13 @@ namespace BlazorApp2.Controllers
             _emailSender = emailSender;
             _noOpEmailSender = noOpEmailSender;
             _antiforgery = antiforgery;
+            _cache = cache;
             _logger = logger;
+        }
+
+        private static string GenerateVerificationCode()
+        {
+            return RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         }
 
         [HttpGet("antiforgery")]
@@ -206,6 +219,132 @@ namespace BlazorApp2.Controllers
 
             _logger.LogInformation("User {UserId} requested email change to {NewEmail}", user.Id, request.NewEmail);
             return Ok(ApiResponse.Success("Verification email sent. Please check your inbox."));
+        }
+
+        [HttpPost("register-with-passkey")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegisterWithPasskey([FromBody] RegisterWithPasskeyRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponse.Failure("Invalid request"));
+            }
+
+            // Check if user already exists
+            var existingUser = await _userManager.FindByEmailAsync(request.Email);
+            if (existingUser != null)
+            {
+                // Don't reveal that user exists for security
+                return Ok(ApiResponse<RegisterWithPasskeyResponse>.Success(
+                    new RegisterWithPasskeyResponse { UserId = Guid.NewGuid().ToString() },
+                    "A verification code has been sent to your email."));
+            }
+
+            // Create user without password
+            var user = new ApplicationUser { UserName = request.Email, Email = request.Email };
+            var result = await _userManager.CreateAsync(user);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("User {Email} created a new account with passkey registration", request.Email);
+
+                // Generate a 6-digit verification code
+                var verificationCode = GenerateVerificationCode();
+
+                // Store the code in cache
+                var cacheKey = $"{PasskeyVerificationCodePrefix}{user.Id}";
+                await _cache.SetStringAsync(cacheKey, verificationCode, new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = VerificationCodeExpiry
+                });
+
+                // Send the code via email
+                await _noOpEmailSender.SendEmailVerificationCodeAsync(user, user.Email!, verificationCode);
+
+                return Ok(ApiResponse<RegisterWithPasskeyResponse>.Success(
+                    new RegisterWithPasskeyResponse { UserId = user.Id },
+                    "A verification code has been sent to your email."));
+            }
+
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            _logger.LogWarning("Failed to create passkey user: {Errors}", errors);
+            return Ok(ApiResponse.Failure(errors));
+        }
+
+        [HttpPost("verify-passkey-email")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyPasskeyEmail([FromBody] VerifyPasskeyEmailRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponse.Failure("Invalid request"));
+            }
+
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+            {
+                return Ok(ApiResponse.Failure("Invalid verification code."));
+            }
+
+            // Check the verification code from cache
+            var cacheKey = $"{PasskeyVerificationCodePrefix}{user.Id}";
+            var storedCode = await _cache.GetStringAsync(cacheKey);
+
+            if (string.IsNullOrEmpty(storedCode) || storedCode != request.Code)
+            {
+                _logger.LogWarning("Invalid or expired verification code for user {UserId}", user.Id);
+                return Ok(ApiResponse.Failure("Invalid or expired verification code."));
+            }
+
+            // Mark email as confirmed
+            user.EmailConfirmed = true;
+            await _userManager.UpdateAsync(user);
+
+            // Remove the code from cache
+            await _cache.RemoveAsync(cacheKey);
+
+            // Generate a passkey setup token
+            var setupToken = await _userManager.GenerateUserTokenAsync(user, TokenOptions.DefaultProvider, "setup-passkey");
+
+            _logger.LogInformation("User {UserId} verified email for passkey registration", user.Id);
+
+            return Ok(ApiResponse<VerifyPasskeyEmailResponse>.Success(
+                new VerifyPasskeyEmailResponse { UserId = user.Id, SetupToken = setupToken },
+                "Email verified successfully."));
+        }
+
+        [HttpPost("resend-passkey-verification")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendPasskeyVerification([FromBody] ResendPasskeyVerificationRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponse.Failure("Invalid request"));
+            }
+
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null || user.EmailConfirmed)
+            {
+                // Don't reveal user state
+                return Ok(ApiResponse.Success("If the account exists and is pending verification, a new code has been sent."));
+            }
+
+            // Generate a new 6-digit verification code
+            var verificationCode = GenerateVerificationCode();
+
+            // Store the code in cache (overwrites previous)
+            var cacheKey = $"{PasskeyVerificationCodePrefix}{user.Id}";
+            await _cache.SetStringAsync(cacheKey, verificationCode, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = VerificationCodeExpiry
+            });
+
+            // Send the code via email
+            await _noOpEmailSender.SendEmailVerificationCodeAsync(user, user.Email!, verificationCode);
+
+            _logger.LogInformation("Resent verification code to user {UserId}", user.Id);
+
+            return Ok(ApiResponse.Success("A new verification code has been sent to your email."));
         }
 
         [HttpGet("confirm-email-change")]

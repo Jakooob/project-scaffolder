@@ -5,11 +5,13 @@ import {
   Box,
   Button,
   Container,
+  Divider,
   Link,
   Paper,
   TextField,
   Typography,
 } from '@mui/material'
+import KeyIcon from '@mui/icons-material/Key'
 import { useAuth } from '@/contexts/AuthContext'
 
 export function RegisterPage() {
@@ -75,6 +77,26 @@ export function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+
+            <Box sx={{ my: 3 }}>
+              <Button
+                component={RouterLink}
+                to="/register-with-passkey"
+                state={{ email }}
+                fullWidth
+                variant="outlined"
+                startIcon={<KeyIcon />}
+                sx={{ mb: 2 }}
+              >
+                Create account with Passkey
+              </Button>
+              <Divider>
+                <Typography variant="body2" color="text.secondary">
+                  or set a password
+                </Typography>
+              </Divider>
+            </Box>
+
             <TextField
               margin="normal"
               required

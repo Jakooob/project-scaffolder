@@ -64,6 +64,33 @@ export interface PasskeyAssertionOptions {
   }>
 }
 
+export interface RegisterWithPasskeyRequest {
+  email: string
+}
+
+export interface RegisterWithPasskeyResponse {
+  userId: string
+}
+
+export interface VerifyPasskeyEmailRequest {
+  userId: string
+  code: string
+}
+
+export interface VerifyPasskeyEmailResponse {
+  userId: string
+  setupToken: string
+}
+
+export interface ResendPasskeyVerificationRequest {
+  userId: string
+}
+
+export interface PasskeySetupRequest {
+  userId: string
+  setupToken: string
+}
+
 export interface PasskeyCreationOptions {
   challenge: string
   rp: {

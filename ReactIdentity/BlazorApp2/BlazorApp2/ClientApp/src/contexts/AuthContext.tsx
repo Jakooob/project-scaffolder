@@ -1,6 +1,18 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { apiGet, apiPost, clearAntiforgeryToken } from '@/api/apiClient'
-import type { User, LoginRequest, RegisterRequest, LoginResponse, ApiResponse, Verify2faRequest } from '@/types/auth'
+import type {
+  User,
+  LoginRequest,
+  RegisterRequest,
+  RegisterWithPasskeyRequest,
+  RegisterWithPasskeyResponse,
+  VerifyPasskeyEmailRequest,
+  VerifyPasskeyEmailResponse,
+  ResendPasskeyVerificationRequest,
+  LoginResponse,
+  ApiResponse,
+  Verify2faRequest
+} from '@/types/auth'
 
 interface AuthContextType {
   user: User | null
@@ -8,6 +20,9 @@ interface AuthContextType {
   isAuthenticated: boolean
   login: (request: LoginRequest) => Promise<LoginResponse>
   register: (request: RegisterRequest) => Promise<ApiResponse>
+  registerWithPasskey: (request: RegisterWithPasskeyRequest) => Promise<ApiResponse<RegisterWithPasskeyResponse>>
+  verifyPasskeyEmail: (request: VerifyPasskeyEmailRequest) => Promise<ApiResponse<VerifyPasskeyEmailResponse>>
+  resendPasskeyVerification: (request: ResendPasskeyVerificationRequest) => Promise<ApiResponse>
   logout: () => Promise<void>
   verify2fa: (request: Verify2faRequest) => Promise<LoginResponse>
   refreshUser: () => Promise<void>
@@ -45,6 +60,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return response
   }
 
+  const registerWithPasskey = async (request: RegisterWithPasskeyRequest): Promise<ApiResponse<RegisterWithPasskeyResponse>> => {
+    const response = await apiPost<ApiResponse<RegisterWithPasskeyResponse>>('/auth/register-with-passkey', request)
+    return response
+  }
+
+  const verifyPasskeyEmail = async (request: VerifyPasskeyEmailRequest): Promise<ApiResponse<VerifyPasskeyEmailResponse>> => {
+    const response = await apiPost<ApiResponse<VerifyPasskeyEmailResponse>>('/auth/verify-passkey-email', request)
+    return response
+  }
+
+  const resendPasskeyVerification = async (request: ResendPasskeyVerificationRequest): Promise<ApiResponse> => {
+    const response = await apiPost<ApiResponse>('/auth/resend-passkey-verification', request)
+    return response
+  }
+
   const logout = async () => {
     await apiPost('/auth/logout')
     setUser(null)
@@ -67,6 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        registerWithPasskey,
+        verifyPasskeyEmail,
+        resendPasskeyVerification,
         logout,
         verify2fa,
         refreshUser,

@@ -206,4 +206,72 @@ namespace BlazorApp2.Models
         public string? Name { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
     }
+
+    public class RegisterWithPasskeyRequest
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class RegisterWithPasskeyResponse
+    {
+        public string UserId { get; set; } = string.Empty;
+    }
+
+    public class VerifyPasskeyEmailRequest
+    {
+        [Required]
+        public string UserId { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(6, MinimumLength = 6)]
+        public string Code { get; set; } = string.Empty;
+    }
+
+    public class VerifyPasskeyEmailResponse
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string SetupToken { get; set; } = string.Empty;
+    }
+
+    public class ResendPasskeyVerificationRequest
+    {
+        [Required]
+        public string UserId { get; set; } = string.Empty;
+    }
+
+    public class PasskeySetupRequest
+    {
+        [Required]
+        public string UserId { get; set; } = string.Empty;
+
+        [Required]
+        public string SetupToken { get; set; } = string.Empty;
+    }
+
+    public class PasskeySetupRegisterRequest
+    {
+        [Required]
+        public string UserId { get; set; } = string.Empty;
+
+        [Required]
+        public string SetupToken { get; set; } = string.Empty;
+
+        [Required]
+        public string Id { get; set; } = string.Empty;
+
+        [Required]
+        public string RawId { get; set; } = string.Empty;
+
+        [Required]
+        public PasskeyRegistrationResponse Response { get; set; } = null!;
+
+        [Required]
+        public string Type { get; set; } = string.Empty;
+
+        public string? AuthenticatorAttachment { get; set; }
+
+        public object? ClientExtensionResults { get; set; }
+    }
 }

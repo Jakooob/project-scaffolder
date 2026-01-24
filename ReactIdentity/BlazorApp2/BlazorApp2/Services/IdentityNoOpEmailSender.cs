@@ -28,5 +28,11 @@ namespace BlazorApp2.Services
             _logger.LogInformation("2FA Code for {Email}: {Code}", email, code);
             return emailSender.SendEmailAsync(email, "Your two-factor authentication code", $"Your verification code is: <strong>{code}</strong>");
         }
+
+        public Task SendEmailVerificationCodeAsync(ApplicationUser user, string email, string code)
+        {
+            _logger.LogInformation("Email verification code for {Email}: {Code}", email, code);
+            return emailSender.SendEmailAsync(email, "Verify your email", $"Your verification code is: <strong>{code}</strong>. This code expires in 10 minutes.");
+        }
     }
 }

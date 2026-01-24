@@ -3,6 +3,7 @@ using BlazorApp2.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 
 namespace BlazorApp2.Controllers
@@ -100,6 +101,140 @@ namespace BlazorApp2.Controllers
             {
                 _logger.LogError(ex, "Error during passkey authentication");
                 return Ok(new LoginResponse { Succeeded = false, Message = "Passkey authentication failed" });
+            }
+        }
+
+        [HttpPost("setup-creation-options")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GetSetupCreationOptions([FromBody] PasskeySetupRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ApiResponse.Failure("Invalid request"));
+                }
+
+                var user = await _userManager.FindByIdAsync(request.UserId);
+                if (user == null)
+                {
+                    return BadRequest(ApiResponse.Failure("Invalid setup request"));
+                }
+
+                // Verify the setup token
+                var isValidToken = await _userManager.VerifyUserTokenAsync(
+                    user,
+                    TokenOptions.DefaultProvider,
+                    "setup-passkey",
+                    request.SetupToken);
+
+                if (!isValidToken)
+                {
+                    _logger.LogWarning("Invalid passkey setup token for user {UserId}", request.UserId);
+                    return BadRequest(ApiResponse.Failure("Invalid or expired setup token"));
+                }
+
+                // Verify email is confirmed
+                if (!user.EmailConfirmed)
+                {
+                    return BadRequest(ApiResponse.Failure("Email not confirmed"));
+                }
+
+                // Generate passkey creation options
+                var optionsJson = await _signInManager.MakePasskeyCreationOptionsAsync(new PasskeyUserEntity
+                {
+                    Id = user.Id,
+                    Name = user.Email ?? user.UserName ?? "User",
+                    DisplayName = user.Email ?? user.UserName ?? "User"
+                });
+
+                return Content(optionsJson, "application/json");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating passkey setup creation options");
+                return BadRequest(ApiResponse.Failure("Failed to generate passkey creation options"));
+            }
+        }
+
+        [HttpPost("setup-register")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetupRegister([FromBody] PasskeySetupRegisterRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ApiResponse.Failure("Invalid request"));
+                }
+
+                var user = await _userManager.FindByIdAsync(request.UserId);
+                if (user == null)
+                {
+                    return Ok(new LoginResponse { Succeeded = false, Message = "Invalid setup request" });
+                }
+
+                // Verify the setup token
+                var isValidToken = await _userManager.VerifyUserTokenAsync(
+                    user,
+                    TokenOptions.DefaultProvider,
+                    "setup-passkey",
+                    request.SetupToken);
+
+                if (!isValidToken)
+                {
+                    _logger.LogWarning("Invalid passkey setup token during registration for user {UserId}", request.UserId);
+                    return Ok(new LoginResponse { Succeeded = false, Message = "Invalid or expired setup token" });
+                }
+
+                // Verify email is confirmed
+                if (!user.EmailConfirmed)
+                {
+                    return Ok(new LoginResponse { Succeeded = false, Message = "Email not confirmed" });
+                }
+
+                // Convert the request to JSON format expected by Identity
+                var credentialJson = JsonSerializer.Serialize(new
+                {
+                    id = request.Id,
+                    rawId = request.RawId,
+                    response = new
+                    {
+                        clientDataJSON = request.Response.ClientDataJSON,
+                        attestationObject = request.Response.AttestationObject,
+                        transports = request.Response.Transports
+                    },
+                    type = request.Type,
+                    authenticatorAttachment = request.AuthenticatorAttachment,
+                    clientExtensionResults = request.ClientExtensionResults ?? new { }
+                });
+
+                var attestationResult = await _signInManager.PerformPasskeyAttestationAsync(credentialJson);
+                if (!attestationResult.Succeeded)
+                {
+                    return Ok(new LoginResponse { Succeeded = false, Message = attestationResult.Failure?.Message ?? "Passkey registration failed" });
+                }
+
+                var addResult = await _userManager.AddOrUpdatePasskeyAsync(user, attestationResult.Passkey);
+                if (!addResult.Succeeded)
+                {
+                    var errors = string.Join(", ", addResult.Errors.Select(e => e.Description));
+                    return Ok(new LoginResponse { Succeeded = false, Message = errors });
+                }
+
+                _logger.LogInformation("User {UserId} registered passkey during setup", user.Id);
+
+                // Sign in the user
+                await _signInManager.SignInAsync(user, isPersistent: false);
+
+                _logger.LogInformation("User {UserId} signed in after passkey setup", user.Id);
+
+                return Ok(new LoginResponse { Succeeded = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during passkey setup registration");
+                return Ok(new LoginResponse { Succeeded = false, Message = "Passkey registration failed" });
             }
         }
 
